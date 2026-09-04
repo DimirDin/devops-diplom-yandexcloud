@@ -13,7 +13,7 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
-# --- Бесплатно: проверки без обращения к облаку ----------------------------
+# --- Проверки: выполняются локально, ресурсы не создают ---------------------
 
 .PHONY: check
 check: tf-check helm-check ## Все локальные проверки
@@ -43,15 +43,15 @@ repos: ## Добавить helm-репозитории (нужно один ра
 	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 	helm repo update
 
-# --- Платно: создаёт ресурсы в облаке --------------------------------------
+# --- Инфраструктура --------------------------------------------------------
 
 .PHONY: bootstrap
-bootstrap: ## [почти бесплатно] SA + бакет под стейт
+bootstrap: ## SA + бакет под стейт (тарифицируется только объём хранения)
 	terraform -chdir=terraform/bootstrap init
 	terraform -chdir=terraform/bootstrap apply
 
 .PHONY: network
-network: ## [бесплатно] только сеть, без кластера
+network: ## Только сеть, без кластера
 	terraform -chdir=terraform/infra apply \
 		-target=yandex_vpc_network.main \
 		-target=yandex_vpc_subnet.main \
@@ -59,7 +59,7 @@ network: ## [бесплатно] только сеть, без кластера
 		-target=yandex_vpc_gateway.nat
 
 .PHONY: up
-up: ## [ПЛАТНО] вся инфраструктура: сеть, кластер, реестр
+up: ## [$] Вся инфраструктура: сеть, кластер, реестр
 	terraform -chdir=terraform/infra apply
 
 .PHONY: down
@@ -67,7 +67,7 @@ down: ## Снести инфраструктуру (кроме bootstrap)
 	terraform -chdir=terraform/infra destroy
 
 .PHONY: stop
-stop: ## Погасить кластер — мастер перестаёт тарифицироваться
+stop: ## Погасить кластер (мастер перестаёт тарифицироваться)
 	yc managed-kubernetes cluster stop \
 		--id $$(terraform -chdir=terraform/infra output -raw cluster_id)
 
@@ -83,7 +83,7 @@ kubeconfig: ## Записать ~/.kube/config для кластера
 # --- Установка в кластер ---------------------------------------------------
 
 .PHONY: ingress
-ingress: ## Поставить ingress-nginx (создаёт платный балансировщик)
+ingress: ## [$] ingress-nginx — заказывает сетевой балансировщик
 	kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 	helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
 		--namespace ingress-nginx --create-namespace \
