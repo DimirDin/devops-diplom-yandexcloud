@@ -24,6 +24,12 @@ spec:
       labels:
         app: diplom-app
     spec:
+      # emptyDir-тома создаются от root. Без fsGroup nginx под uid 101 не может
+      # создать в них временные каталоги и падает при старте — проверено
+      # локально. fsGroup заставляет kubelet отдать тома этой группе.
+      securityContext:
+        fsGroup: 101
+
       # Узлы прерываемые: разносим реплики по разным узлам, чтобы остановка
       # одного не унесла всё приложение целиком.
       topologySpreadConstraints:
