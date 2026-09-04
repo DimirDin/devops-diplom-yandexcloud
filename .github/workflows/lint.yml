@@ -1,0 +1,69 @@
+name: lint
+
+# Бесплатные проверки: ни одна из них не обращается к Yandex Cloud
+# и не требует секретов, поэтому работает и на пустом счёте.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+          terraform_wrapper: false
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive terraform/
+
+      - name: terraform validate
+        run: |
+          for dir in terraform/bootstrap terraform/infra; do
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+          done
+
+  kubernetes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+
+      - name: Отрендерить чарты с нашими values
+        run: |
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+
+          helm template ingress-nginx ingress-nginx/ingress-nginx \
+            --namespace ingress-nginx \
+            --values kubernetes/ingress-nginx/values.yaml > /tmp/ingress.yaml
+
+          helm template monitoring prometheus-community/kube-prometheus-stack \
+            --namespace monitoring \
+            --values kubernetes/monitoring/values.yaml \
+            --set 'grafana.ingress.hosts[0]=grafana.example.com' > /tmp/monitoring.yaml
+
+      - name: Проверить манифесты приложения по схемам Kubernetes
+        run: |
+          curl -sSL -o kubeconform.tar.gz \
+            https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          tar xf kubeconform.tar.gz kubeconform
+
+          # Плейсхолдеры подставляются при применении — для проверки схемы
+          # достаточно любых валидных значений.
+          mkdir -p /tmp/app
+          for f in kubernetes/app/*.yaml; do
+            sed -e 's/REGISTRY_ID/crp00000000000000000/' \
+                -e 's/APP_HOST/app.example.com/' "$f" > "/tmp/app/$(basename "$f")"
+          done
+
+          ./kubeconform -strict -summary /tmp/app/
+          # У чартов свои CRD, которых нет в публичных схемах — их пропускаем.
+          ./kubeconform -ignore-missing-schemas -summary /tmp/ingress.yaml /tmp/monitoring.yaml
