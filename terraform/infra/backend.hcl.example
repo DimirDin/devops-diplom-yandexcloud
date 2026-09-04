@@ -1,0 +1,2 @@
+bucket = "diplom-tfstate-dimirdin"
+key    = "infra/terraform.tfstate"

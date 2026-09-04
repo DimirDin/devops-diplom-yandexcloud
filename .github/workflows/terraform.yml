@@ -1,0 +1,90 @@
+name: terraform
+
+# CI/CD-driven terraform — альтернатива Atlantis из этапа 4.
+# План на pull request, применение после мержа в main.
+on:
+  pull_request:
+    paths: ["terraform/infra/**", ".github/workflows/terraform.yml"]
+  push:
+    branches: [main]
+    paths: ["terraform/infra/**", ".github/workflows/terraform.yml"]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+defaults:
+  run:
+    working-directory: terraform/infra
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    env:
+      # Ключи сервисного аккаунта для доступа к бакету со стейтом.
+      AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_KEY }}
+      # Авторизация провайдера Yandex по ключу сервисного аккаунта.
+      YC_SERVICE_ACCOUNT_KEY_FILE: ${{ github.workspace }}/sa-key.json
+
+      TF_VAR_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+      TF_VAR_folder_id: ${{ secrets.YC_FOLDER_ID }}
+      TF_VAR_k8s_cluster_sa_id: ${{ secrets.YC_K8S_CLUSTER_SA_ID }}
+      TF_VAR_k8s_node_sa_id: ${{ secrets.YC_K8S_NODE_SA_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Положить ключ сервисного аккаунта
+        run: |
+          echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' > "$YC_SERVICE_ACCOUNT_KEY_FILE"
+        working-directory: .
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+          terraform_wrapper: false
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive ..
+
+      - name: terraform init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=infra/terraform.tfstate"
+
+      - name: terraform validate
+        run: terraform validate
+
+      - name: terraform plan
+        id: plan
+        run: terraform plan -no-color -input=false -out=tfplan | tee plan.txt
+
+      - name: Опубликовать план в PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('terraform/infra/plan.txt', 'utf8');
+            // Комментарий GitHub ограничен 65536 символами — режем хвост.
+            const body = plan.length > 60000
+              ? plan.slice(0, 60000) + '\n\n... план обрезан, полный вывод в логе job ...'
+              : plan;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '#### terraform plan\n```hcl\n' + body + '\n```',
+            });
+
+      - name: terraform apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Убрать ключ
+        if: always()
+        run: rm -f "$YC_SERVICE_ACCOUNT_KEY_FILE"
+        working-directory: .

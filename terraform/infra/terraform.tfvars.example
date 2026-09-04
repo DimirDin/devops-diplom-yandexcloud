@@ -1,0 +1,6 @@
+cloud_id  = "b1gxxxxxxxxxxxxxxxxx"
+folder_id = "b1gxxxxxxxxxxxxxxxxx"
+
+# Значения берутся из выводов terraform/bootstrap
+k8s_cluster_sa_id = "ajexxxxxxxxxxxxxxxxx"
+k8s_node_sa_id    = "ajexxxxxxxxxxxxxxxxx"

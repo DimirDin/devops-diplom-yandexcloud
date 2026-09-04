@@ -1,0 +1,33 @@
+# ingress-nginx: единственная точка входа в кластер.
+#
+# Один сервис типа LoadBalancer на весь кластер — заказывать по внешнему
+# адресу на каждое приложение дорого и не нужно. Grafana и тестовое
+# приложение разводятся по разным хостам на одном и том же 80 порту.
+
+controller:
+  service:
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+
+  # Узлов мало и они прерываемые — одна реплика, но с запасом по живучести.
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+  # Метрики контроллера забирает Prometheus.
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      namespace: monitoring
+
+  admissionWebhooks:
+    enabled: true
+
+defaultBackend:
+  enabled: false

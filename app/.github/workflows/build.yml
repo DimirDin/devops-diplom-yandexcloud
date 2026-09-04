@@ -1,0 +1,45 @@
+name: build
+
+# Сборка образа на каждый коммит в main — требование этапа 5.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  IMAGE_NAME: diplom-app
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Подставить версию в статику
+        run: |
+          sed -i "s/__IMAGE_TAG__/${GITHUB_SHA::7}/" static/index.html
+
+      - name: Собрать образ
+        run: |
+          docker build -t "$IMAGE_NAME:${GITHUB_SHA::7}" .
+
+      # На pull request только собираем: пушить в реестр из чужого PR нельзя,
+      # секреты туда не передаются, да и мусорить в реестре незачем.
+      - name: Логин в Container Registry
+        if: github.event_name == 'push'
+        run: |
+          echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' \
+            | docker login --username json_key --password-stdin cr.yandex
+
+      - name: Запушить образ
+        if: github.event_name == 'push'
+        env:
+          REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          docker tag "$IMAGE_NAME:$SHORT_SHA" "cr.yandex/$REGISTRY_ID/$IMAGE_NAME:$SHORT_SHA"
+          docker tag "$IMAGE_NAME:$SHORT_SHA" "cr.yandex/$REGISTRY_ID/$IMAGE_NAME:latest"
+          docker push "cr.yandex/$REGISTRY_ID/$IMAGE_NAME:$SHORT_SHA"
+          docker push "cr.yandex/$REGISTRY_ID/$IMAGE_NAME:latest"

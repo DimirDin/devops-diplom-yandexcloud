@@ -1,0 +1,144 @@
+# kube-prometheus-stack: Prometheus + Grafana + Alertmanager + node-exporter.
+#
+# Values подогнаны под маленький кластер из двух прерываемых узлов:
+# сроки хранения короткие, реплики одиночные, ресурсы урезаны.
+
+fullnameOverride: monitoring
+
+# --- Prometheus -------------------------------------------------------------
+prometheus:
+  prometheusSpec:
+    replicas: 1
+    retention: 3d
+    retentionSize: 5GB
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
+
+    # Забирать ServiceMonitor'ы из всех неймспейсов, а не только свои —
+    # иначе метрики приложения и ingress-контроллера не попадут в Prometheus.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 8Gi
+
+# --- Grafana ----------------------------------------------------------------
+grafana:
+  enabled: true
+
+  # Пароль задаётся секретом grafana-admin (см. kubernetes/README.md),
+  # чтобы не хранить его в git.
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+  persistence:
+    enabled: true
+    size: 2Gi
+
+  # Доступ по HTTP на 80 порту через общий ingress-nginx.
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    # Хост подставляется при установке:
+    #   --set grafana.ingress.hosts[0]=grafana.<LB_IP>.nip.io
+    hosts: []
+    path: /
+    pathType: Prefix
+
+  # Дашборды состояния кластера, которые требует задание.
+  # kube-prometheus-stack ставит свой набор (Kubernetes / Compute Resources,
+  # Node Exporter / Nodes и другие) автоматически; добавляем пару популярных
+  # из grafana.com поверх.
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder: ""
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+
+  dashboards:
+    default:
+      kubernetes-cluster:
+        gnetId: 7249    # Kubernetes Cluster
+        revision: 1
+        datasource: Prometheus
+      node-exporter-full:
+        gnetId: 1860    # Node Exporter Full
+        revision: 37
+        datasource: Prometheus
+      ingress-nginx:
+        gnetId: 9614    # NGINX Ingress controller
+        revision: 1
+        datasource: Prometheus
+
+# --- Alertmanager -----------------------------------------------------------
+alertmanager:
+  alertmanagerSpec:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 2Gi
+
+# --- Экспортеры -------------------------------------------------------------
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+# Managed Kubernetes не отдаёт метрики компонентов управляющего слоя —
+# мастер закрыт от пользователя. Эти проверки выключены, иначе Prometheus
+# будет вечно показывать таргеты в состоянии down.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false

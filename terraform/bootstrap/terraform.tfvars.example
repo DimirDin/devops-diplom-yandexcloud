@@ -1,0 +1,4 @@
+cloud_id          = "b1gxxxxxxxxxxxxxxxxx"
+folder_id         = "b1gxxxxxxxxxxxxxxxxx"
+state_bucket_name = "diplom-tfstate-dimirdin"
+default_zone      = "ru-central1-a"

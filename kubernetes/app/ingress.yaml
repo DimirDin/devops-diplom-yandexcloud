@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: diplom-app
+  namespace: app
+spec:
+  ingressClassName: nginx
+  rules:
+    # Хост подставляется при применении манифеста:
+    #   sed "s/APP_HOST/app.$LB_IP.nip.io/" ingress.yaml | kubectl apply -f -
+    # nip.io резолвит app.1.2.3.4.nip.io в 1.2.3.4 — обходимся без домена.
+    - host: APP_HOST
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: diplom-app
+                port:
+                  name: http
