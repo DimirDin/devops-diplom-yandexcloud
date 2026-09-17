@@ -8,6 +8,7 @@
 resource "yandex_kubernetes_cluster" "main" {
   name        = "diplom-k8s"
   description = "Кластер дипломного проекта"
+  labels      = var.common_labels
 
   network_id = yandex_vpc_network.main.id
 
@@ -53,6 +54,7 @@ resource "yandex_kubernetes_node_group" "main" {
   name        = "diplom-node-group"
   description = "Рабочие узлы кластера"
   version     = var.k8s_version
+  labels      = var.common_labels
 
   instance_template {
     platform_id = "standard-v3"
