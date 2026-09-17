@@ -6,6 +6,8 @@
 resource "yandex_vpc_network" "main" {
   name        = "diplom-network"
   description = "Основная сеть дипломного проекта"
+
+  labels = var.common_labels
 }
 
 resource "yandex_vpc_subnet" "main" {
@@ -15,6 +17,7 @@ resource "yandex_vpc_subnet" "main" {
   zone           = var.zones[count.index]
   network_id     = yandex_vpc_network.main.id
   v4_cidr_blocks = [var.subnet_cidrs[count.index]]
+  labels         = var.common_labels
   route_table_id = yandex_vpc_route_table.nat.id
 }
 

@@ -94,3 +94,12 @@ variable "registry_name" {
   type        = string
   default     = "diplom-registry"
 }
+
+variable "common_labels" {
+  description = "Метки на всех ресурсах — чтобы дипломные объекты отличались от чужих в каталоге"
+  type        = map(string)
+  default = {
+    project = "diplom"
+    managed = "terraform"
+  }
+}
