@@ -21,7 +21,7 @@ locals {
     "container-registry.admin", # Container Registry
     "compute.admin",            # узлы группы узлов
     "iam.serviceAccounts.user", # назначать SA узлам кластера
-    "storage.editor",           # чтение/запись стейта в бакете
+    "storage.admin",            # стейт в бакете: запись плюс настройка версионирования
     "load-balancer.admin",      # балансировщики, создаваемые ingress-ом
   ]
 }
@@ -69,7 +69,10 @@ resource "yandex_storage_bucket" "tfstate" {
     prevent_destroy = true
   }
 
-  depends_on = [yandex_resourcemanager_folder_iam_member.terraform]
+  # Зависимость сознательно сужена до одной роли, а не до всей карты:
+  # depends_on на весь for_each означал бы, что удаление любой роли из списка
+  # тянет за собой пересоздание бакета со стейтом.
+  depends_on = [yandex_resourcemanager_folder_iam_member.terraform["storage.admin"]]
 }
 
 # ---------------------------------------------------------------------------

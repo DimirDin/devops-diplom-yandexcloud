@@ -2,3 +2,7 @@ cloud_id          = "b1gxxxxxxxxxxxxxxxxx"
 folder_id         = "b1gxxxxxxxxxxxxxxxxx"
 state_bucket_name = "diplom-tfstate-dimirdin"
 default_zone      = "ru-central1-a"
+
+# В каталоге уже есть terraform-sa с прошлых работ (с ролями admin/editor) —
+# наш аккаунт называется иначе, чтобы не пересекаться с ним.
+sa_name = "diplom-terraform-sa"

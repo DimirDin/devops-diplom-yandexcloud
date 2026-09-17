@@ -12,17 +12,18 @@ terraform {
   # Значения подставляются из backend.hcl:
   #   terraform init -backend-config=backend.hcl
   backend "s3" {
-    endpoints = {
-      s3 = "https://storage.yandexcloud.net"
-    }
-    region = "ru-central1"
+    # endpoint, а не endpoints: блочный синтаксис появился только в Terraform 1.6,
+    # а на машине 1.5.7 — там он молча игнорируется и бэкенд уходит в AWS.
+    # Этот вариант понимают обе версии.
+    endpoint = "https://storage.yandexcloud.net"
+    region   = "ru-central1"
 
     # Yandex Object Storage — S3-совместимое, но не AWS:
     # проверки, специфичные для AWS, отключаем.
     skip_region_validation      = true
     skip_credentials_validation = true
     skip_requesting_account_id  = true
-    skip_s3_checksum            = true
+    force_path_style            = true
   }
 }
 
