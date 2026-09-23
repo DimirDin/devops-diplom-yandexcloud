@@ -24,7 +24,8 @@ resource "yandex_kubernetes_cluster" "main" {
       }
     }
 
-    public_ip = true
+    public_ip          = true
+    security_group_ids = [yandex_vpc_security_group.k8s.id]
 
     maintenance_policy {
       auto_upgrade = false
@@ -60,8 +61,9 @@ resource "yandex_kubernetes_node_group" "main" {
     platform_id = "standard-v3"
 
     network_interface {
-      nat        = false
-      subnet_ids = [yandex_vpc_subnet.main[0].id]
+      nat                = false
+      subnet_ids         = [yandex_vpc_subnet.main[0].id]
+      security_group_ids = [yandex_vpc_security_group.k8s.id]
     }
 
     resources {
