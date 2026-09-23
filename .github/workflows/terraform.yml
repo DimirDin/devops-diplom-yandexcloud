@@ -8,6 +8,14 @@ on:
   push:
     branches: [main]
     paths: ["terraform/infra/**", ".github/workflows/terraform.yml"]
+  # Ручной запуск: на случай, когда push-триггер не сработал,
+  # и чтобы можно было применить конфигурацию по требованию.
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Выполнить apply (иначе только plan)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -81,7 +89,10 @@ jobs:
             });
 
       - name: terraform apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' ||
+           (github.event_name == 'workflow_dispatch' && inputs.apply))
         run: terraform apply -input=false -auto-approve tfplan
 
       - name: Убрать ключ
