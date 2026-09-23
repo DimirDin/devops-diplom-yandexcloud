@@ -37,6 +37,12 @@ prometheus:
 grafana:
   enabled: true
 
+  # Диск Grafana подключается только к одному узлу (ReadWriteOnce). При
+  # стратегии RollingUpdate новый под уезжает на другой узел и вечно ждёт том,
+  # который держит старый — обновление встаёт намертво. Recreate снимает это.
+  deploymentStrategy:
+    type: Recreate
+
   # Пароль задаётся секретом grafana-admin (см. kubernetes/README.md),
   # чтобы не хранить его в git.
   admin:
@@ -44,12 +50,15 @@ grafana:
     userKey: admin-user
     passwordKey: admin-password
 
+  # 256Mi оказалось мало: Grafana с набором дашбордов kube-prometheus-stack
+  # стабильно получала OOMKilled при их загрузке, отдавая 503 и "Could not
+  # load plugin". Проверено на живом кластере.
   resources:
     requests:
       cpu: 100m
-      memory: 128Mi
-    limits:
       memory: 256Mi
+    limits:
+      memory: 512Mi
 
   persistence:
     enabled: true
