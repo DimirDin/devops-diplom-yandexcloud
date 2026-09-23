@@ -15,15 +15,15 @@ locals {
   # Минимальный набор ролей под задачи основного конфига:
   # сеть, managed k8s, реестр образов, объектное хранилище под стейт.
   terraform_sa_roles = [
-    "vpc.admin",                # сети и подсети
-    "k8s.admin",                # кластер Managed Kubernetes
-    "k8s.clusters.agent",       # работа кластера от имени SA
+    "vpc.admin",                     # сети и подсети
+    "k8s.admin",                     # кластер Managed Kubernetes
+    "k8s.clusters.agent",            # работа кластера от имени SA
     "k8s.cluster-api.cluster-admin", # права внутри Kubernetes: нужны пайплайну деплоя
-    "container-registry.admin", # Container Registry
-    "compute.admin",            # узлы группы узлов
-    "iam.serviceAccounts.user", # назначать SA узлам кластера
-    "storage.admin",            # стейт в бакете: запись плюс настройка версионирования
-    "load-balancer.admin",      # балансировщики, создаваемые ingress-ом
+    "container-registry.admin",      # Container Registry
+    "compute.admin",                 # узлы группы узлов
+    "iam.serviceAccounts.user",      # назначать SA узлам кластера
+    "storage.admin",                 # стейт в бакете: запись плюс настройка версионирования
+    "load-balancer.admin",           # балансировщики, создаваемые ingress-ом
   ]
 }
 
