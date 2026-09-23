@@ -61,7 +61,10 @@ resource "yandex_kubernetes_node_group" "main" {
     platform_id = "standard-v3"
 
     network_interface {
-      nat                = false
+      # Публичный адрес обязателен: внешний сетевой балансировщик Yandex
+      # сохраняет адрес клиента, и узел отвечает ему напрямую. Через NAT-шлюз
+      # обратный трафик не проходит — соединение висит до таймаута.
+      nat                = true
       subnet_ids         = [yandex_vpc_subnet.main[0].id]
       security_group_ids = [yandex_vpc_security_group.k8s.id]
     }

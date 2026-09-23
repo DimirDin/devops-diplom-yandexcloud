@@ -18,26 +18,8 @@ resource "yandex_vpc_subnet" "main" {
   network_id     = yandex_vpc_network.main.id
   v4_cidr_blocks = [var.subnet_cidrs[count.index]]
   labels         = var.common_labels
-  route_table_id = yandex_vpc_route_table.nat.id
 }
 
-# ---------------------------------------------------------------------------
-# NAT-шлюз: узлы кластера сидят без публичных адресов, но им нужен исход
-# в интернет — тянуть образы и обновления.
-# ---------------------------------------------------------------------------
-
-resource "yandex_vpc_gateway" "nat" {
-  name = "diplom-nat-gateway"
-
-  shared_egress_gateway {}
-}
-
-resource "yandex_vpc_route_table" "nat" {
-  name       = "diplom-nat-route-table"
-  network_id = yandex_vpc_network.main.id
-
-  static_route {
-    destination_prefix = "0.0.0.0/0"
-    gateway_id         = yandex_vpc_gateway.nat.id
-  }
-}
+# NAT-шлюз убран намеренно: маршрут 0.0.0.0/0 через него ломал обратный трафик
+# от внешнего балансировщика. Узлы ходят в интернет через собственные
+# публичные адреса.
