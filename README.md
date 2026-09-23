@@ -43,10 +43,6 @@ kubernetes/              ingress-nginx, kube-prometheus-stack, манифест�
 
 ![Nodes Overview](docs/screenshots/03-grafana-nodes.png)
 
-Node Exporter.
-
-![Node Exporter](docs/screenshots/04-grafana-node-exporter.png)
-
 Поды тестового приложения — обе реплики с метриками.
 
 ![Неймспейс app](docs/screenshots/05-grafana-pods.png)
@@ -58,13 +54,19 @@ Node Exporter.
 
 ![План в PR](docs/screenshots/07-pr-plan.png)
 
-![Прогоны terraform](docs/screenshots/06-actions-terraform.png)
+Успешное применение конфигурации из пайплайна — прогон, создавший кластер.
+
+![Применение terraform](docs/screenshots/06-actions-terraform.png)
 
 ### Этап 5: сборка и деплой
 
 Сборка образа на коммит, деплой в кластер по тегу версии.
 
 ![Сборка и деплой](docs/screenshots/08-actions-deploy.png)
+
+Сборка образа по коммиту в `main` и публикация в Yandex Container Registry.
+
+![Сборка образа](docs/screenshots/09-actions-build.png)
 
 ## Оптимизация расходов
 
