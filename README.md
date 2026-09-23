@@ -22,6 +22,50 @@ kubernetes/              ingress-nginx, kube-prometheus-stack, манифест�
 | Terraform-пайплайн | GitHub Actions вместо Atlantis | Тот же результат без ещё одной машины с вебхуками |
 | Доступ по 80 порту | Один ingress-nginx + `nip.io` | Один внешний адрес на кластер вместо LoadBalancer на каждый сервис |
 
+## Результат
+
+Инфраструктура развёрнута, проверена и удалена, чтобы не тарифицироваться.
+Скриншоты сняты на живой системе.
+
+### Этап 3 и 4: приложение по HTTP на 80 порту
+
+Тестовое приложение, образ собран из тега `v1.0.0` и выкачен пайплайном.
+
+![Приложение](docs/screenshots/01-app.png)
+
+### Этап 4: мониторинг
+
+Состояние кластера — CPU, память и разбивка по неймспейсам, включая `app`.
+
+![Kubernetes Cluster](docs/screenshots/02-grafana-cluster.png)
+
+Узлы кластера.
+
+![Nodes Overview](docs/screenshots/03-grafana-nodes.png)
+
+Node Exporter.
+
+![Node Exporter](docs/screenshots/04-grafana-node-exporter.png)
+
+Поды тестового приложения — обе реплики с метриками.
+
+![Неймспейс app](docs/screenshots/05-grafana-pods.png)
+
+### Этап 4: CI/CD-driven terraform
+
+План публикуется комментарием в pull request, применение — только после мержа
+в `main`. Это заменяет Atlantis из задания.
+
+![План в PR](docs/screenshots/07-pr-plan.png)
+
+![Прогоны terraform](docs/screenshots/06-actions-terraform.png)
+
+### Этап 5: сборка и деплой
+
+Сборка образа на коммит, деплой в кластер по тегу версии.
+
+![Сборка и деплой](docs/screenshots/08-actions-deploy.png)
+
 ## Оптимизация расходов
 
 Задание требует минимизировать стоимость инфраструктуры. Принятые решения и их цена:
