@@ -21,6 +21,13 @@ permissions:
   contents: read
   pull-requests: write
 
+# S3-бэкенд Yandex работает без блокировки стейта, поэтому два одновременных
+# apply способны его испортить. Очередь на уровне GitHub Actions — самая
+# дешёвая защита: второй прогон ждёт, а не идёт параллельно.
+concurrency:
+  group: terraform-infra
+  cancel-in-progress: false
+
 defaults:
   run:
     working-directory: terraform/infra

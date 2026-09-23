@@ -38,9 +38,9 @@ variable "service_ipv4_range" {
 }
 
 variable "k8s_version" {
-  description = "Версия Kubernetes"
+  description = "Версия Kubernetes (проверять актуальные: yc managed-kubernetes list-versions)"
   type        = string
-  default     = "1.30"
+  default     = "1.33"
 }
 
 variable "k8s_cluster_sa_id" {
